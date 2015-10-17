@@ -1,7 +1,7 @@
 It's easier to rely upon HTTP response codes, rather than parsing messages. i.e. when the back-end sends code X, that means that the front-end should do action Y.
 
 Getting a status:
-	Request a status by sending a GET request to the StatusServlet (to be mapped to a URI later).
+	Request a status by sending a GET request to the StatusServlet (mapped to /status).
 		MUST INCLUDE PARAMETERS:
 			-username - (user to get statuses from)
 			-time - date/time string (in MySQL format YYYY-MM-DD HH:MM:SS, where HH is in 24-hour clock mode). Can also be "current" to represent current time
@@ -12,7 +12,7 @@ Getting a status:
 	-500 = something went very wrong on the server side (either a bad connection to MySQL...or something like that)
 
 Setting your own status:
-	Set your status by sending a POST request to the StatusServlet
+	Set your status by sending a POST request to the StatusServlet (mapped to /status)
 		MUST INCLUDE PARAMETERS:
 		-userID (you know this, so use the ID, not the name)
 		-status (you know...the actual thing)

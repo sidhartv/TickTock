@@ -22,7 +22,7 @@ import java.util.Date;
 /**
  * Servlet implementation class StatusServlet
  */
-@WebServlet("/StatusServlet")
+@WebServlet("/status")
 public class StatusServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
@@ -159,8 +159,10 @@ public class StatusServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		PrintStream errorOut = System.err; //Prints to console, or wherever stderr points, when something goes wrong
+		
+		/* MySQL set up */
 		Connection connection = null;
-		PrintStream errorOut = System.err;
 		try {
 			try {
 				Class.forName("com.mysql.jdbc.Driver");
@@ -185,7 +187,14 @@ public class StatusServlet extends HttpServlet {
 			response.sendError(500, "Statement creation failed");
 			return;
 		}
+		
+		
+		
+		
+		
 		String status = request.getParameter("status");
+		
+		/* Parse and validate the userID out of the parameters */
 		int userID = -1;
 		try {
 			userID = Integer.parseInt(request.getParameter("uid"));
@@ -195,6 +204,7 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		
+		/* Validate username */
 		String username = null;
 		try {
 			username = SQLHelpers.getUserFromUserID(userID);
@@ -209,11 +219,14 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		
-		
-		String expiry = request.getParameter("expiry");
+		/* Set up of current date formatting, etc. */
 		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date currentDateTime = new Date (System.currentTimeMillis());
 		String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
+
+		String expiry = request.getParameter("expiry");
+		
+		/* Update old statuses to be expired */
 		String updateExpiryQuery = "UPDATE 'statuses' SET 'expiry'= " + mySQLFormatedCurrentTime + " WHERE 'userID'=" + Integer.toString(userID) + " AND 'expiry' > " + mySQLFormatedCurrentTime; 
 		try {
 			statement.execute(updateExpiryQuery);
@@ -222,6 +235,8 @@ public class StatusServlet extends HttpServlet {
 			response.sendError(500, "UPDATE of old, non expired statuses failed");
 			return;
 		}
+		
+		/* Format the new status' expiry date */
 		Date expiryDate = null;
 		try {
 			expiryDate = mySQLFormatDateTime.parse(expiry);
@@ -231,6 +246,8 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		String mySQLFormattedExpiryDate = mySQLFormatDateTime.format(expiryDate);
+		
+		/* Insert the new status into the database */
 		String insertQuery = "INSERT INTO 'statuses' ('userID','status','timeposted','expiry') VALUES (" + Integer.toString(userID) + "," + status + "," + mySQLFormatedCurrentTime + "," + mySQLFormattedExpiryDate + ")"; 
 		try {
 			statement.executeQuery(insertQuery);
