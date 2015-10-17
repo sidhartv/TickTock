@@ -1,12 +1,23 @@
 It's easier to rely upon HTTP response codes, rather than parsing messages. i.e. when the back-end sends code X, that means that the front-end should do action Y.
 
 Getting a status:
-	Request a status by sending a get request to the StatusServlet (to be mapped to a URI later).
+	Request a status by sending a GET request to the StatusServlet (to be mapped to a URI later).
 		MUST INCLUDE PARAMETERS:
-			username - (user to get statuses from)
-			time - date/time string (in MySQL format YYYY-MM-DD HH:MM:SS, where HH is in 24-hour clock mode). Can also be "current" to represent current time
+			-username - (user to get statuses from)
+			-time - date/time string (in MySQL format YYYY-MM-DD HH:MM:SS, where HH is in 24-hour clock mode). Can also be "current" to represent current time
 	Response types:
 	-200 = all good! The status of the user at the time is provided as a JSON object with username (not ID), status, and the time that the status was posted.
 	-204 = all good, but no data to send back. Do whatever you need to render a lack of statuses made by this user.
-	-412 = you ended up in Pittsburgh. Tell the user to get Primantis. Just kidding. A parameter was missing
+	-412 = you ended up in Pittsburgh. Tell the user to get Primantis. Just kidding. A parameter was missing, or was invalid
 	-500 = something went very wrong on the server side (either a bad connection to MySQL...or something like that)
+
+Setting your own status:
+	Set your status by sending a POST request to the StatusServlet
+		MUST INCLUDE PARAMETERS:
+		-userID (you know this, so use the ID, not the name)
+		-status (you know...the actual thing)
+		-expiry (the time that this status should expire)
+	Response types:
+		-204 = all good. You won't get anything back if the post is successful. Up to the front end what to do if we successfully post the status.
+		-412 = malformed parameters. Can occur if user ID does not exist, or expiry is not a well-formed date
+		-500 = something went very wrong on the server side

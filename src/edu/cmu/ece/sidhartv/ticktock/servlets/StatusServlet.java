@@ -43,7 +43,6 @@ public class StatusServlet extends HttpServlet {
 		Connection connection = null;
 		PrintWriter responseOut = response.getWriter();
 		PrintStream errorOut = System.err;
-		
 		try {
 			try {
 				Class.forName("com.mysql.jdbc.Driver");
@@ -61,13 +60,27 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		Statement statement = null;
-		int requestedUserId = -1;
+		String usernameRequested = (request.getParameter("user"));
 		try {
-			requestedUserId = Integer.parseInt(request.getParameter("uid"));
-		} catch (NumberFormatException e) {
-			errorOut.println("User ID was not a valid number");
-			response.sendError(412,"User ID was not a valid number");
+			usernameRequested.length();
+		} catch (NullPointerException e) {
+			errorOut.println("User parameter not passed in...or something went wrong and I don't know why.");
+			response.sendError(412, "User parameter not passed in...or something went wrong and I don't know why.");
 			return;
+		}
+		
+		
+		int requestedUserId = -1; 
+		try {
+			requestedUserId = SQLHelpers.getUserIDFromName(usernameRequested);
+		} catch (SQLException e) {
+			errorOut.println("Something went wrong while querying username");
+			response.sendError(500, "Something went wrong while querying username");
+			return;
+		}
+		if (requestedUserId < 0) {
+			errorOut.println("Invalid userID");
+			response.sendError(412, "Invalid username");
 		}
 		
 		String dateTimeRequested = (request.getParameter("time"));
@@ -78,7 +91,6 @@ public class StatusServlet extends HttpServlet {
 			response.sendError(412, "Time parameter was not passed in...or something went wrong and I don't know why.");
 			return;
 		}
-		
 		
 		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		
@@ -102,7 +114,7 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		String dateToUseString = mySQLFormatDateTime.format(dateToUse);
-		String query = "SELECT 'status' FROM 'statuses' WHERE 'userID'= " + requestedUserId + " AND 'timeposted' > " + dateToUseString + " ORDER BY 'timeposted' DESC";
+		String query = "SELECT * FROM 'statuses' WHERE 'userID'= " + requestedUserId + " AND 'timeposted' <= " + dateToUseString + " AND " + dateToUseString + " < 'expiry' ORDER BY 'timeposted' DESC";
 		ResultSet queryResultSet = null;
 		try {
 			queryResultSet = statement.executeQuery(query);
@@ -113,35 +125,123 @@ public class StatusServlet extends HttpServlet {
 		}
 		String statusToRespond = "";
 		String timePosted = "";
+		String userIDStr = "";
 		try {
 			if (queryResultSet.first()) {
 				statusToRespond.concat(queryResultSet.getNString("status"));
 				timePosted.concat(queryResultSet.getNString("timePosted"));
+				userIDStr.concat(queryResultSet.getNString("userID"));
+				int userID = Integer.parseInt(userIDStr);
+				String username = SQLHelpers.getUserFromUserID(userID);
+				
+				response.setContentType("text/json");
+				responseOut.append("{ \n"
+										+ "\t\"username\": " + username + "\n"
+										+ "\t\"status\": " + statusToRespond + "\n"
+										+ "\t\"timePosted\": " + timePosted  + "\n"
+								+ "}");
+				response.setStatus(200); //200 = YAY
 			} else {
 				statusToRespond = null;
 				timePosted = null;
+				userIDStr = null;
+				
+				response.setStatus(204); //Empty response
 			}
 		} catch (SQLException e) {
 			errorOut.println("Something went wrong...somehow...whoops");
 			response.sendError(500,"Something went wrong...somehow...whoops");
 			return;
 		}
-		response.setContentType("text/json");
-		responseOut.append("{ \n"
-								+ "\t\"status\": " + statusToRespond + "\n"
-								+ "\t\"timePosted\": " + timePosted  + "\n"
-						+ "}");
-		response.setStatus(200); //200 = YAY
-		
-		
 	}
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
+		Connection connection = null;
+		PrintStream errorOut = System.err;
+		try {
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+			} catch (ClassNotFoundException e) {
+				errorOut.println("Error: driver cannot be found");
+				response.sendError(500, "Error: driver cannot be found\n");
+				return;
+			}
+			connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
+		} catch (SQLException e) {
+			String errorMsg = "Failed to connect to MySQL database: \n\t"
+					+ e.getMessage();
+			errorOut.println(errorMsg);
+			response.sendError(500, errorMsg);
+			return;
+		}
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			errorOut.println("Statement creation failed");
+			response.sendError(500, "Statement creation failed");
+			return;
+		}
+		String status = request.getParameter("status");
+		int userID = -1;
+		try {
+			userID = Integer.parseInt(request.getParameter("uid"));
+		} catch (NumberFormatException e) {
+			errorOut.println("User ID must be an integer");
+			response.sendError(412, "User ID must be an integer");
+			return;
+		}
+		
+		String username = null;
+		try {
+			username = SQLHelpers.getUserFromUserID(userID);
+		} catch (SQLException e) {
+			errorOut.println("User verification failed");
+			response.sendError(500, "User verification failed");
+			return;
+		}
+		if (username == null) {
+			errorOut.println("User ID does not exist!");
+			response.sendError(412, "User ID does not exist");
+			return;
+		}
+		
+		
+		String expiry = request.getParameter("expiry");
+		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date currentDateTime = new Date (System.currentTimeMillis());
+		String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
+		String updateExpiryQuery = "UPDATE 'statuses' SET 'expiry'= " + mySQLFormatedCurrentTime + " WHERE 'userID'=" + Integer.toString(userID) + " AND 'expiry' > " + mySQLFormatedCurrentTime; 
+		try {
+			statement.execute(updateExpiryQuery);
+		} catch (SQLException e) {
+			errorOut.println("UPDATE of old, non expired statuses failed");
+			response.sendError(500, "UPDATE of old, non expired statuses failed");
+			return;
+		}
+		Date expiryDate = null;
+		try {
+			expiryDate = mySQLFormatDateTime.parse(expiry);
+		} catch (ParseException e1) {
+			errorOut.println("Invalid expiry date");
+			response.sendError(412, "Invalid expiry date");
+			return;
+		}
+		String mySQLFormattedExpiryDate = mySQLFormatDateTime.format(expiryDate);
+		String insertQuery = "INSERT INTO 'statuses' ('userID','status','timeposted','expiry') VALUES (" + Integer.toString(userID) + "," + status + "," + mySQLFormatedCurrentTime + "," + mySQLFormattedExpiryDate + ")"; 
+		try {
+			statement.executeQuery(insertQuery);
+		} catch (SQLException e) {
+			errorOut.println("INSERTion of new status failed");
+			response.sendError(500, "INSERTion of new status failed");
+			return;
+		}
+		response.setStatus(204); //All good, won't receive any data.
+		
+		
 	}
 
 }
