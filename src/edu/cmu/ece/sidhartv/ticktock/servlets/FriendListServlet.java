@@ -76,8 +76,8 @@ public class FriendListServlet extends HttpServlet {
 			response.sendError(412, "Could not find user");
 			return;
 		}
-		String query1 = "SELECT * FROM 'friendships' WHERE 'friend1'=" + thisID;
-		String query2 = "SELECT * FROM 'friendships' WHERE 'friend2'=" + thisID;
+		String query1 = "SELECT * FROM friendships WHERE friend1= '" + thisID +"'";
+		String query2 = "SELECT * FROM friendships WHERE friend2= '" + thisID + "'";
 		ResultSet result1 = null;
 		ResultSet result2 = null;
 		try {

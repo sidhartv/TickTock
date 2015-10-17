@@ -230,7 +230,7 @@ public class StatusServlet extends HttpServlet {
 		String expiry = request.getParameter("expiry");
 		
 		/* Update old statuses to be expired */
-		String updateExpiryQuery = "UPDATE 'statuses' SET 'expiry'= " + mySQLFormatedCurrentTime + " WHERE 'userID'=" + Integer.toString(userID) + " AND 'expiry' > " + mySQLFormatedCurrentTime; 
+		String updateExpiryQuery = "UPDATE statuses SET expiry= '" + mySQLFormatedCurrentTime + "' WHERE userID= '" + Integer.toString(userID) + "' AND expiry > '" + mySQLFormatedCurrentTime +"'"; 
 		try {
 			statement.execute(updateExpiryQuery);
 		} catch (SQLException e) {
@@ -251,7 +251,7 @@ public class StatusServlet extends HttpServlet {
 		String mySQLFormattedExpiryDate = mySQLFormatDateTime.format(expiryDate);
 		
 		/* Insert the new status into the database */
-		String insertQuery = "INSERT INTO 'statuses' ('userID','status','timeposted','expiry') VALUES (" + Integer.toString(userID) + "," + status + "," + mySQLFormatedCurrentTime + "," + mySQLFormattedExpiryDate + ")"; 
+		String insertQuery = "INSERT INTO statuses (userID,status,timeposted,expiry) VALUES ('" + Integer.toString(userID) + "','" + status + "','" + mySQLFormatedCurrentTime + "','" + mySQLFormattedExpiryDate + "')"; 
 		try {
 			statement.executeQuery(insertQuery);
 		} catch (SQLException e) {

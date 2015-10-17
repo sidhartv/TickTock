@@ -86,9 +86,9 @@ public class MeetingRequestServlet extends HttpServlet {
 		}
 		String query = "";
 		if (isPropositioner) {
-			query = "SELECT * FROM 'meeting_requests' WHERE 'propositioner'=" + myID;
+			query = "SELECT * FROM meeting_requests WHERE propositioner= '" + myID +"'";
 		} else {
-			query = "SELECT * FROM 'meeting_requests' WHERE 'approver'=" + myID;
+			query = "SELECT * FROM meeting_requests WHERE approver= '" + myID +"'";
 		}
 		ResultSet result = null;
 		try {
@@ -211,7 +211,7 @@ public class MeetingRequestServlet extends HttpServlet {
 				response.sendError(412, "Something went wrong while querying username");
 				return;
 			}
-			String validateNotFriendsAlreadyQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
+			String validateNotFriendsAlreadyQuery = "SELECT * FROM friendships WHERE (friend1= '" + me + "' AND friend2= '" + other + "') OR (friend1= '" + other + "' AND friend2= '" + me + "')";
 			boolean alreadyFriends = true;
 			try {
 				alreadyFriends = statement.executeQuery(validateNotFriendsAlreadyQuery).first();
@@ -245,7 +245,7 @@ public class MeetingRequestServlet extends HttpServlet {
 				return;
 			}
 			String mySQLFormatedExpiryTime = mySQLFormatDateTime.format(expiryDateTime);
-			String insertionQuery = "INSERT INTO 'meeting_requests' ('propositioner','approver','duration','expiry','approved','scheduled') VALUES ('" + me + "," + other + "," + duration + "," + mySQLFormatedExpiryTime + ",0,0)";
+			String insertionQuery = "INSERT INTO meeting_requests (propositioner,approver,duration,expiry,approved,scheduled) VALUES ('" + me + "','" + other + "','" + duration + "','" + mySQLFormatedExpiryTime + "','0','0')";
 			try {
 				statement.execute(insertionQuery);
 			} catch (SQLException e) {
@@ -263,7 +263,7 @@ public class MeetingRequestServlet extends HttpServlet {
 				response.sendError(412, "Bad ID");
 				return;
 			}
-			String requestedValidationQuery = "SELECT * FROM 'meeting_requests' WHERE 'id'= " + id;
+			String requestedValidationQuery = "SELECT * FROM meeting_requests WHERE id= '" + id +"'";
 			boolean alreadyRequested = true;
 			try {
 				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
@@ -277,7 +277,7 @@ public class MeetingRequestServlet extends HttpServlet {
 				response.sendError(412, "Request does not exist");
 				return;
 			}
-			String updateQuery = "UPDATE 'meeting_requests' SET 'approved'=1 WHERE 'id'= " + id;
+			String updateQuery = "UPDATE meeting_requests SET approved='1' WHERE id= '" + id +"'";
 			try {
 				statement.execute(updateQuery);
 			} catch (SQLException e) {

@@ -201,7 +201,7 @@ public class FriendRequestServlet extends HttpServlet {
 			return;
 		}
 		if (makeRequest) {
-			String validateNotFriendsAlreadyQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
+			String validateNotFriendsAlreadyQuery = "SELECT * FROM friendships' WHERE (friend1= '" + me + "' AND friend2= '" + other + "') OR (friend1= '" + other + "' AND friend2= '" + me + "')";
 			boolean alreadyFriends = true;
 			try {
 				alreadyFriends = statement.executeQuery(validateNotFriendsAlreadyQuery).first();
@@ -216,7 +216,7 @@ public class FriendRequestServlet extends HttpServlet {
 				return;
 			}
 			boolean alreadyRequested = true;
-			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			String requestedValidationQuery = "SELECT * FROM friend_requests WHERE (initiator_id= '" + me + "' AND target_id= '" + other + "') OR (target_id= '" + other + "' AND initiator_id= '" + me + "')";
 			try {
 				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
 			} catch (SQLException e) {
@@ -233,7 +233,7 @@ public class FriendRequestServlet extends HttpServlet {
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			Date currentDateTime = new Date (System.currentTimeMillis());
 			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
-			String insertionQuery = "INSERT INTO 'friend_requests' ('initiator_id','target_id','request_time') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			String insertionQuery = "INSERT INTO friend_requests (initiator_id,target_id,request_time) VALUES ('" + me + "','" + other + "','" + mySQLFormatedCurrentTime + "')";
 			try {
 				statement.execute(insertionQuery);
 			} catch (SQLException e) {
@@ -243,7 +243,7 @@ public class FriendRequestServlet extends HttpServlet {
 			}
 			response.setStatus(204); //Friend request sent
 		} else {
-			String validateNotFriendsQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
+			String validateNotFriendsQuery = "SELECT * FROM friendships WHERE (friend1= '" + me + "' AND friend2= '" + other + "') OR (friend1= '" + other + "' AND friend2= '" + me + "')";
 			boolean alreadyFriends = true;
 			try {
 				alreadyFriends = statement.executeQuery(validateNotFriendsQuery).first();
@@ -257,7 +257,7 @@ public class FriendRequestServlet extends HttpServlet {
 				response.sendError(412, "Already friends");
 				return;
 			}
-			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			String requestedValidationQuery = "SELECT * FROM friend_requests WHERE (initiator_id= '" + me + "' AND target_id= '" + other + "') OR (target_id= '" + other + "' AND initiator_id= '" + me + "')";
 			boolean alreadyRequested = true;
 			try {
 				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
@@ -275,7 +275,7 @@ public class FriendRequestServlet extends HttpServlet {
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			Date currentDateTime = new Date (System.currentTimeMillis());
 			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
-			String insertionQuery = "INSERT INTO 'friendships' ('friend1','friend2','friendship_start') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			String insertionQuery = "INSERT INTO friendships (friend1,friend2,friendship_start) VALUES ('" + me + "','" + other + "','" + mySQLFormatedCurrentTime + "')";
 			try {
 				statement.execute(insertionQuery);
 			} catch (SQLException e) {
