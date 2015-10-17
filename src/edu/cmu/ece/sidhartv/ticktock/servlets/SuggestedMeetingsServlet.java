@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -42,9 +43,171 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.getWriter().append("Served at: ").append(request.getContextPath());
+		Connection connection = null;
+		PrintWriter responseOut = response.getWriter();
+		PrintStream errorOut = System.err;
+		try {
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+			} catch (ClassNotFoundException e) {
+				errorOut.println("Error: driver cannot be found");
+				response.sendError(500, "Error: driver cannot be found\n");
+				return;
+			}
+			connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
+		} catch (SQLException e) {
+			String errorMsg = "Failed to connect to MySQL database: \n\t"
+					+ e.getMessage();
+			errorOut.println(errorMsg);
+			response.sendError(500, errorMsg);
+			return;
+		}
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			errorOut.println("Statement creation failed");
+			response.sendError(500, "Statement creation failed");
+			return;
+		}
+		
+		int me = -1;
+		try {
+			me = Integer.parseInt(request.getParameter("ownID"));
+		} catch (NumberFormatException e) {
+			errorOut.println("Bad own ID");
+			response.sendError(412, "Bad own ID");
+			return;
+		}
+		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date currentDateTime = new Date (System.currentTimeMillis());
+		String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
+		String query = "SELECT * FROM meeting_requests WHERE propositioner= '" + me +"' OR approver = '" + me + "' AND approved='1' AND expiry < '" + mySQLFormatedCurrentTime + "'";
+		ResultSet result = null;
+		try {
+			result = statement.executeQuery(query);
+		} catch (SQLException e) {
+			errorOut.println("SELECT query failed");
+			response.sendError(500,"SELECT query failed");
+			return;
+		}
+		ArrayList<MeetingRequest> requests = new ArrayList<MeetingRequest>();
+		try {
+			while(result.next()) {
+				int prop = Integer.parseInt(result.getString("propositioner"));
+				int app = Integer.parseInt(result.getString("approver"));
+				int other = -1;
+				if (prop == me) {
+					other = app;
+				} else {
+					other = prop;
+				}
+				int duration = -1;
+				try {
+					duration = Integer.parseInt(result.getString("duration"));
+				} catch (NumberFormatException | SQLException e2) {
+					// TODO Auto-generated catch block
+					e2.printStackTrace();
+				}
+				String expiryStr = null;
+				try {
+					expiryStr = result.getString("expiry");
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				Date expiry = null;
+				try {
+					expiry = mySQLFormatDateTime.parse(expiryStr);
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				requests.add(new MeetingRequest(me, other, duration, expiry));
+			}
+		} catch (NumberFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		ArrayList<String> jsonArray = new ArrayList<String>();
+		
+		for (MeetingRequest meetingRequest : requests) {
+			TimeSegmentCollection myTimeSegments = new TimeSegmentCollection(meetingRequest.getMe());
+			TimeSegmentCollection otherTimeSegments = new TimeSegmentCollection(meetingRequest.getOther());
+			int duration = meetingRequest.getDuration();
+			HashMap<ListClass, LinkedList<TimeSegment>> map = myTimeSegments.getSegregatedFreeList();
+			for (ListClass lc : map.keySet()) {
+				if (lc.isInBounds(duration)) {
+					LinkedList<TimeSegment> listOfInterest = map.get(lc);
+					for (TimeSegment timeSegment : listOfInterest) {
+						TimeSegment match = otherTimeSegments.findSegment(timeSegment.getStart(), duration);
+						if (match == null) {
+							continue;
+						} else {
+							jsonArray.add("{ \"start\": \"" + timeSegment.getStart() + ", \"duration\": \"" + duration + "\"}");
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+		}
+		if (jsonArray.isEmpty()) {
+			response.setStatus(204);
+			return;
+		}
+		
+		String jsonStr = "{\n" +
+							"\t \"suggestions\": [\n";
+		for (int i = 0; i < jsonArray.size() - 1; i++) {
+			jsonStr.concat(jsonArray.get(i) + ",\n");
+		}
+		jsonStr.concat(jsonArray.get(jsonArray.size() - 1) + "\n");
+		jsonStr.concat("\t]");
+		jsonStr.concat("}");
+		responseOut.append(jsonStr);
+		response.setStatus(200);
+		return;
+		
+		
 	}
+	public class MeetingRequest {
+		private int me;
+		private int other;
+		private int duration;
+		private Date expiry;
+		
+		public MeetingRequest(int me,int other,int duration,Date expiry) {
+			this.me = me;
+			this.other = other;
+			this.duration = duration;
+			this.expiry = expiry;
+		}
+
+		public int getMe() {
+			return me;
+		}
+
+		public int getOther() {
+			return other;
+		}
+
+		public int getDuration() {
+			return duration;
+		}
+
+		public Date getExpiry() {
+			return expiry;
+		}
+		
+	}
+	
 	
 	public class TimeSegment {
 		private Date start;
@@ -75,6 +238,12 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 			long diffMillis = endMillis - startMillis;
 			long diffMinutes = diffMillis / 60000;
 			return (int)diffMinutes;
+		}
+		public boolean isInRange(Date start, int duration) {
+			long myStart = this.start.getTime();
+			long myEnd = this.end.getTime();
+			long thatStart = start.getTime();
+			return (thatStart > myStart && thatStart + duration < myEnd);
 		}
 	}
 	public class TimeSegmentCollection {
@@ -107,9 +276,7 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
 		}
-		
 		public void calculateFreeList() throws SQLException, ClassNotFoundException, ParseException {
 			Connection connection = null;
 			Class.forName("com.mysql.jdbc.Driver");
@@ -141,7 +308,9 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 				}
 			}
 		}
-		
+		public HashMap<ListClass,LinkedList<TimeSegment>> getSegregatedFreeList() {
+			return this.segregatedFreeList;
+		}
 		
 		private void addSegment(TimeSegment t) {
 			for (ListClass listClass : segregatedFreeList.keySet()) {
@@ -153,6 +322,19 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 		private void addToList(ListClass lc, TimeSegment t) {
 			LinkedList<TimeSegment> list = segregatedFreeList.get(lc);
 			list.addLast(t);
+		}
+		public TimeSegment findSegment(Date start,int duration) {
+			for (ListClass listClass : segregatedFreeList.keySet()) {
+				if (listClass.isInBounds(duration)) {
+					LinkedList<TimeSegment> listOfInterest = segregatedFreeList.get(listClass);
+					for (TimeSegment timeSegment : listOfInterest) {
+						if (timeSegment.isInRange(start, duration)) {
+							return timeSegment;
+						}
+					}
+				}
+			}
+			return null;
 		}
 		
 	}
@@ -171,6 +353,9 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 		}
 		public boolean isInBounds(TimeSegment t) {
 			return lowerBound <= t.getDifference() && t.getDifference() < upperBound;
+		}
+		public boolean isInBounds (int duration) {
+			return lowerBound <= duration && duration < upperBound;
 		}
 	}
 
