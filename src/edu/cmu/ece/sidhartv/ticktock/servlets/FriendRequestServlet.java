@@ -185,7 +185,7 @@ public class FriendRequestServlet extends HttpServlet {
 			return;
 		}
 		String otherName = request.getParameter("other");
-		int other;
+		int other = -1;
 		try {
 			other = SQLHelpers.getUserIDFromName(otherName);
 		} catch (SQLException e) {

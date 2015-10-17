@@ -23,7 +23,7 @@ Setting your own status:
 		-500 = something went very wrong on the server side
 		
 Getting pending friend requests: 
-	-Request who has friended you, or who you have friended by sending a GET request to the FriendRequestServlet (mapped to /friend_requests)
+	-See who has friended you, or who you have friended by sending a GET request to the FriendRequestServlet (mapped to /friend_requests)
 	-MUST INCLUDE PARAMETERS:
 		-id - YOUR user id
 		-party - equal to "target" if you want to see who has friended you or "initiator" to see who you've friended
@@ -32,3 +32,25 @@ Getting pending friend requests:
 	-204 = all good, but no data to send back because there are no pending friend requests
 	-412 = invalid parameters. Either the id provided is invalid, or the party is neither equal to "target" nor "initiator"
 	-500 = server side error...welp
+	
+Making friend requests:
+	-Send a POST request to the FriendRequestServlet, with parameter type="request"
+	-MUST INCLUDE PARAMETERS:
+		-me - your user ID
+		-other - the other person's user name
+		-type - set equal to "request" for this action
+	Response types:
+	-204 = all good. Servlet returns nothing when request is successful
+	-412 = malformed parameters. Either you and the other person are already friends, a friend request already exists, a/the user(s) cannot be found, or type is invalid
+	-500 = server side error
+
+Approving friend requests:
+	-Send a POST request to the FriendRequestServlet, with parameter type="approval"
+	-MUST INCLUDE PARAMETERS:
+		-me - your user ID
+		-other - the other person's user name
+		-type - set equal to "approval" for this action
+	Response types:
+	-204 = all good. Servlet returns nothing when approval is successful
+	-412 = malformed parameters. Either you and the other person are already friends, a friend request does not exist, a/the user(s) cannot be found, or type is invalid
+	-500 = server side error	
