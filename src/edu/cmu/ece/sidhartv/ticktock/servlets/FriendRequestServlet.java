@@ -96,9 +96,9 @@ public class FriendRequestServlet extends HttpServlet {
 		ArrayList<FriendRequest> friendRequests = new ArrayList<FriendRequest>();
 		try {
 			while (result.next()) {
-				int initiator = Integer.parseInt(result.getNString("initiator_id"));
-				int target = Integer.parseInt(result.getNString("target_id"));
-				String requestDateString = result.getNString("request_time");
+				int initiator = Integer.parseInt(result.getString("initiator_id"));
+				int target = Integer.parseInt(result.getString("target_id"));
+				String requestDateString = result.getString("request_time");
 				SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				Date requestDate = null;
 				try {

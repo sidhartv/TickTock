@@ -101,13 +101,13 @@ public class MeetingRequestServlet extends HttpServlet {
 		ArrayList<MeetingRequest> meetingRequests = new ArrayList<MeetingRequest>();
 		try {
 			while (result.next()) {
-				int id = Integer.parseInt(result.getNString("id"));
-				int propositioner = Integer.parseInt(result.getNString("propositioner"));
-				int approver = Integer.parseInt(result.getNString("approver"));
-				int duration = Integer.parseInt(result.getNString("duration"));
-				boolean scheduled = Integer.parseInt(result.getNString("scheduled")) == 1;
-				boolean approved = Integer.parseInt(result.getNString("approved")) == 1;
-				String expiryDateString = result.getNString("expiry");
+				int id = Integer.parseInt(result.getString("id"));
+				int propositioner = Integer.parseInt(result.getString("propositioner"));
+				int approver = Integer.parseInt(result.getString("approver"));
+				int duration = Integer.parseInt(result.getString("duration"));
+				boolean scheduled = Integer.parseInt(result.getString("scheduled")) == 1;
+				boolean approved = Integer.parseInt(result.getString("approved")) == 1;
+				String expiryDateString = result.getString("expiry");
 				SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				Date expiryDate = null;
 				try {

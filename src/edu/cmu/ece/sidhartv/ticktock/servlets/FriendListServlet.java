@@ -91,10 +91,10 @@ public class FriendListServlet extends HttpServlet {
 		ArrayList<String> userIDs = new ArrayList<String>();
 		try {
 			while(result1.next()) {
-				userIDs.add(result1.getNString("friend2"));
+				userIDs.add(result1.getString("friend2"));
 			}
 			while(result2.next()) {
-				userIDs.add(result2.getNString("friend1"));
+				userIDs.add(result2.getString("friend1"));
 			}
 		} catch (SQLException e) {
 			errorOut.println("Something went wrong...very wrong");

@@ -19,11 +19,11 @@ public class SQLHelpers {
 		}
 		connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
 		
-		String query = "SELECT 'username' FROM 'users' WHERE 'id'=" + Integer.toString(id);
+		String query = "SELECT username FROM users WHERE id= '" + Integer.toString(id) + "'";
 		Statement statement = connection.createStatement();
 		ResultSet result = statement.executeQuery(query);
 		if (result.first()) {
-			String username = result.getNString("username");
+			String username = result.getString("username");
 			return username;
 		}
 		return null;	
@@ -39,11 +39,11 @@ public class SQLHelpers {
 		}
 		connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
 		
-		String query = "SELECT 'id' FROM 'users' WHERE 'username'=" + username;
+		String query = "SELECT id FROM users WHERE username= '" + username + "'";
 		Statement statement = connection.createStatement();
 		ResultSet result = statement.executeQuery(query);
 		if (result.first()) {
-			int userID = Integer.parseInt(result.getNString("id"));
+			int userID = Integer.parseInt(result.getString("id"));
 			return userID;
 		}
 		return -1;

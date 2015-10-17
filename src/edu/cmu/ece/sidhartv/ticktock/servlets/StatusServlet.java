@@ -131,9 +131,9 @@ public class StatusServlet extends HttpServlet {
 		String userIDStr = "";
 		try {
 			if (queryResultSet.first()) {
-				statusToRespond.concat(queryResultSet.getNString("status"));
-				timePosted.concat(queryResultSet.getNString("timePosted"));
-				userIDStr.concat(queryResultSet.getNString("userID"));
+				statusToRespond.concat(queryResultSet.getString("status"));
+				timePosted.concat(queryResultSet.getString("timePosted"));
+				userIDStr.concat(queryResultSet.getString("userID"));
 				int userID = Integer.parseInt(userIDStr);
 				String username = SQLHelpers.getUserFromUserID(userID);
 				
