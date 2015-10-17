@@ -21,3 +21,14 @@ Setting your own status:
 		-204 = all good. You won't get anything back if the post is successful. Up to the front end what to do if we successfully post the status.
 		-412 = malformed parameters. Can occur if user ID does not exist, or expiry is not a well-formed date
 		-500 = something went very wrong on the server side
+		
+Getting pending friend requests: 
+	-Request who has friended you, or who you have friended by sending a GET request to the FriendRequestServlet (mapped to /friend_requests)
+	-MUST INCLUDE PARAMETERS:
+		-id - YOUR user id
+		-party - equal to "target" if you want to see who has friended you or "initiator" to see who you've friended
+	Response types:
+	-200 = all good! Returns a JSON object containing an array of friend requests, each of which have the usernames of the initiator and target, along with the MySQL formatted date-time at which the request was sent
+	-204 = all good, but no data to send back because there are no pending friend requests
+	-412 = invalid parameters. Either the id provided is invalid, or the party is neither equal to "target" nor "initiator"
+	-500 = server side error...welp

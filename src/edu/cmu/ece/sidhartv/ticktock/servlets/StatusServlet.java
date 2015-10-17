@@ -60,6 +60,15 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			errorOut.println("Statement creation failed");
+			response.sendError(500, "Statement creation failed");
+			return;
+		}
+		
+		
 		String usernameRequested = (request.getParameter("user"));
 		try {
 			usernameRequested.length();
@@ -106,13 +115,6 @@ public class StatusServlet extends HttpServlet {
 				return;
 			}
 		}
-		try {
-			statement = connection.createStatement();
-		} catch (SQLException e) {
-			errorOut.println("Statement creation failed");
-			response.sendError(500, "Statement creation failed");
-			return;
-		}
 		String dateToUseString = mySQLFormatDateTime.format(dateToUse);
 		String query = "SELECT * FROM 'statuses' WHERE 'userID'= " + requestedUserId + " AND 'timeposted' <= " + dateToUseString + " AND " + dateToUseString + " < 'expiry' ORDER BY 'timeposted' DESC";
 		ResultSet queryResultSet = null;
@@ -134,7 +136,7 @@ public class StatusServlet extends HttpServlet {
 				int userID = Integer.parseInt(userIDStr);
 				String username = SQLHelpers.getUserFromUserID(userID);
 				
-				response.setContentType("text/json");
+				response.setContentType("application/json");
 				responseOut.append("{ \n"
 										+ "\t\"username\": " + username + "\n"
 										+ "\t\"status\": " + statusToRespond + "\n"
