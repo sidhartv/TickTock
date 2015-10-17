@@ -107,14 +107,39 @@ Get all users
 		-200 = all good, will return TEXT (not json). Each username is on a new line
 		-500 = As alone as when Squidward broke the time machine.
 	
-Get your scheduled events:
-	-Send a GET request to ScheduledEventServlet (/scheduled_event)
+Get a user's states (all of them)
+	-Send a GET request to the UserStateServlet with parameter type="user_all_states"
 	-MUST INCLUDE PARAMETERS:
-		-user - username of the person whose events you want to see
+		-type - must equal "user_all_states" for this action
+		-user - username of desired user
 	Response types:
-		-200 = all good, will return JSON object of array of events, each one consisting of user_id, description, startTime, and endTime
-		-204 = all good, no events means Servlet won't return anything
-		-412 = malformed input, something wrong with the username (either doesn't exist, or something messed up)
-		-500 = Just looking for a rock so that we can deliver this pizza
+		-200 = all good, will return JSON with an array of states in format user_id, state, start_time, end_time
+		-412 = username was probably bad
+		-500 = just looking for a rock to deliver this pizza
 		
+Get a user's state at a given time
+	-Send a GET request to the UserStateServlet with parameter type="user_state_at_time"
+	-MUST INCLUDE PARAMETERS:
+		-type - must equal "user_state_at_time" for this action
+		-user - username of desired user
+		-time - the time that you want the state for
+	Response types:
+		-200 = all good, will return TEXT, consisting of a single integer between 0 and 3
+			0 - idle
+			1 - sleep
+			2 - bored out of mind
+			3 - busy
+		-412 = username was probably bad or time was invalid
+		-500 = LOOK MOSS!!
 		
+Get all user's with a given state at a given time
+	-Send a GET request to the UserStateServlet with parameter type="users_with_state_at_time"
+	-MUST INCLUDE PARAMETERS:
+		-type - must equal "users_with_state_at_time" for this action
+		-state - state desired (0-3)
+		-time - the time that you want the state for
+	Response types:
+		-200 = all good, will return TEXT, consisting of each username of people that have that state at this time, each on a new line
+		-204 = all good, no users with this state at this time
+		-412 = username was probably bad or time was invalid, state was out of bounds, or time was bad
+		-500 = we forgot his drink
