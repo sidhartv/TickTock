@@ -42,33 +42,44 @@ public class StatusServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Connection connection = null;
 		PrintWriter responseOut = response.getWriter();
-		
 		PrintStream errorOut = System.err;
 		
 		try {
 			try {
 				Class.forName("com.mysql.jdbc.Driver");
 			} catch (ClassNotFoundException e) {
-				response.getWriter().append("Error: driver cannot be found\n");
+				errorOut.println("Error: driver cannot be found");
+				response.sendError(500, "Error: driver cannot be found\n");
+				return;
 			}
 			connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
-			errorOut.append("Connection successful");
 		} catch (SQLException e) {
-			errorOut.append("Failed to connect to MySQL database: \n\t"
-					+ e.getMessage()
-					+ "\n");
-			response.setStatus(500);
+			String errorMsg = "Failed to connect to MySQL database: \n\t"
+					+ e.getMessage();
+			errorOut.println(errorMsg);
+			response.sendError(500, errorMsg);
+			return;
 		}
 		Statement statement = null;
 		int requestedUserId = -1;
 		try {
 			requestedUserId = Integer.parseInt(request.getParameter("uid"));
 		} catch (NumberFormatException e) {
-			errorOut.append("User ID was not a valid number");
-			response.setStatus(500);
+			errorOut.println("User ID was not a valid number");
+			response.sendError(412,"User ID was not a valid number");
+			return;
 		}
 		
 		String dateTimeRequested = (request.getParameter("time"));
+		try {
+			dateTimeRequested.length();
+		} catch (NullPointerException e) {
+			errorOut.println("Time parameter was not passed in...or something went wrong and I don't know why.");
+			response.sendError(412, "Time parameter was not passed in...or something went wrong and I don't know why.");
+			return;
+		}
+		
+		
 		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		
 		Date dateToUse = null;
@@ -78,15 +89,17 @@ public class StatusServlet extends HttpServlet {
 			try {
 				dateToUse = mySQLFormatDateTime.parse(dateTimeRequested);
 			} catch (ParseException e) {
-				errorOut.append("Could not parse the provided time\n");
-				response.setStatus(500);
+				errorOut.println("Could not parse the provided time");
+				response.sendError(500, "Could not parse the provided time");
+				return;
 			}
 		}
 		try {
 			statement = connection.createStatement();
 		} catch (SQLException e) {
-			errorOut.append("Statement creation failed\n");
-			response.setStatus(500);
+			errorOut.println("Statement creation failed");
+			response.sendError(500, "Statement creation failed");
+			return;
 		}
 		String dateToUseString = mySQLFormatDateTime.format(dateToUse);
 		String query = "SELECT 'status' FROM 'statuses' WHERE 'userID'= " + requestedUserId + " AND 'timeposted' > " + dateToUseString + " ORDER BY 'timeposted' DESC";
@@ -94,8 +107,9 @@ public class StatusServlet extends HttpServlet {
 		try {
 			queryResultSet = statement.executeQuery(query);
 		} catch (SQLException e) {
-			errorOut.append("Query failed\n");
-			response.setStatus(500);
+			errorOut.println("Query failed");
+			response.sendError(500,"Query failed");
+			return;
 		}
 		String statusToRespond = "";
 		String timePosted = "";
@@ -108,15 +122,16 @@ public class StatusServlet extends HttpServlet {
 				timePosted = null;
 			}
 		} catch (SQLException e) {
-			errorOut.append("Something went wrong...somehow...whoops");
-			response.setStatus(500);
+			errorOut.println("Something went wrong...somehow...whoops");
+			response.sendError(500,"Something went wrong...somehow...whoops");
+			return;
 		}
 		response.setContentType("text/json");
 		responseOut.append("{ \n"
 								+ "\t\"status\": " + statusToRespond + "\n"
 								+ "\t\"timePosted\": " + timePosted  + "\n"
 						+ "}");
-		response.setStatus(200);
+		response.setStatus(200); //200 = YAY
 		
 		
 	}
