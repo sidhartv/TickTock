@@ -19,17 +19,22 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+
+import edu.cmu.ece.sidhartv.ticktock.servlets.MeetingRequestServlet.MeetingRequest;
+
 /**
- * Servlet implementation class RequestFriend
+ * Servlet implementation class MeetingRequestServlet
  */
-@WebServlet("/friend_request")
-public class FriendRequestServlet extends HttpServlet {
+@WebServlet("/meeting_request")
+public class MeetingRequestServlet extends HttpServlet {
+	
+
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public FriendRequestServlet() {
+    public MeetingRequestServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -73,17 +78,17 @@ public class FriendRequestServlet extends HttpServlet {
 			response.sendError(412, "Invalid id number given");
 			return;
 		}
-		boolean isInitiator = request.getParameter("party").equals("initiator");
-		if (!isInitiator && !request.getParameter("party").equals("target")) {
+		boolean isPropositioner = request.getParameter("party").equals("propositioner");
+		if (!isPropositioner && !request.getParameter("party").equals("approver")) {
 			errorOut.println("Invalid party!");
 			response.sendError(412,"Invalid party!");
 			return;
 		}
 		String query = "";
-		if (isInitiator) {
-			query = "SELECT * FROM 'friend_requests' WHERE 'initiator_id'=" + myID;
+		if (isPropositioner) {
+			query = "SELECT * FROM 'meeting_requests' WHERE 'propositioner'=" + myID;
 		} else {
-			query = "SELECT * FROM 'friend_requests' WHERE 'target_id'=" + myID;
+			query = "SELECT * FROM 'meeting_requests' WHERE 'approver'=" + myID;
 		}
 		ResultSet result = null;
 		try {
@@ -93,47 +98,51 @@ public class FriendRequestServlet extends HttpServlet {
 			response.sendError(500,"SELECT query failed");
 			return;
 		}
-		ArrayList<FriendRequest> friendRequests = new ArrayList<FriendRequest>();
+		ArrayList<MeetingRequest> meetingRequests = new ArrayList<MeetingRequest>();
 		try {
 			while (result.next()) {
-				int initiator = Integer.parseInt(result.getNString("initiator_id"));
-				int target = Integer.parseInt(result.getNString("target_id"));
-				String requestDateString = result.getNString("request_time");
+				int id = Integer.parseInt(result.getNString("id"));
+				int propositioner = Integer.parseInt(result.getNString("propositioner"));
+				int approver = Integer.parseInt(result.getNString("approver"));
+				int duration = Integer.parseInt(result.getNString("duration"));
+				boolean scheduled = Integer.parseInt(result.getNString("scheduled")) == 1;
+				boolean approved = Integer.parseInt(result.getNString("approved")) == 1;
+				String expiryDateString = result.getNString("expiry");
 				SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-				Date requestDate = null;
+				Date expiryDate = null;
 				try {
-					requestDate = mySQLFormatDateTime.parse(requestDateString);
+					expiryDate = mySQLFormatDateTime.parse(expiryDateString);
 				} catch (ParseException e) {
 					errorOut.println("Date unparseable");
 					response.sendError(500, "Date unparseable");
 					return;
 				}
-				friendRequests.add(new FriendRequest(initiator,target,requestDate));
+				meetingRequests.add(new MeetingRequest(id,propositioner,approver,duration,expiryDate,approved,scheduled));
 			}
 		} catch (SQLException e) {
 			errorOut.println("Something went terribly wrong with the results");
 			response.sendError(500, "Something went terribly wrong with the results");
 			return;
 		}
-		if (friendRequests.isEmpty()) {
+		if (meetingRequests.isEmpty()) {
 			response.setStatus(204);
 			return;
 		} else {
 			String responseJSON = "{\n" +
-										"\t\"friendRequests\": [\n";
-			for (int i = 0; i < friendRequests.size() - 1; i++) {
-				FriendRequest friendRequest = friendRequests.get(i);
+										"\t\"meetingRequests\": [\n";
+			for (int i = 0; i < meetingRequests.size() - 1; i++) {
+				MeetingRequest meetingRequest = meetingRequests.get(i);
 				try {
-					responseJSON.concat("\t\t{ \"initiator\": " + "\"" + friendRequest.getInitiatorName() + "\"," + "\"target\": \"" + friendRequest.getTargetName() + friendRequest.getRequestDateString() + "\"},\n");
+					responseJSON.concat("\t\t{ \"id\": \"" + meetingRequest.getID() + "\", \"initiator\": " + "\"" + meetingRequest.getPropositionerName() + "\"," + "\"target\": \"" + meetingRequest.getApproverName() + ", \"duration\": " + meetingRequest.getDuration() +  "\", \"expiry\": \"" + meetingRequest.getExpiryDateString() + "\", \"approved\": \"" + meetingRequest.isApproved() + "\", \"scheduled\": " + meetingRequest.isScheduled() + "\"},\n");
 				} catch (SQLException e) {
 					errorOut.println("Error fetching name from ID");
 					response.sendError(500, "Error fetching name from ID");
 					return;
 				}
 			}
-			FriendRequest friendRequest = friendRequests.get(friendRequests.size() - 1); 
+			MeetingRequest meetingRequest = meetingRequests.get(meetingRequests.size() - 1); 
 			try {
-				responseJSON.concat("\t\t{ \"initiator\": " + "\"" + friendRequest.getInitiatorName() + "\"," + "\"target\": \"" + friendRequest.getTargetName() + "\", \"request_time\": \"" + friendRequest.getRequestDateString() + "\"}\n");
+				responseJSON.concat("\t\t{ \"id\": \"" + meetingRequest.getID() + "\", \"initiator\": " + "\"" + meetingRequest.getPropositionerName() + "\"," + "\"target\": \"" + meetingRequest.getApproverName() + ", \"duration\": " + meetingRequest.getDuration() +  "\", \"expiry\": \"" + meetingRequest.getExpiryDateString() + "\", \"approved\": \"" + meetingRequest.isApproved() + "\", \"scheduled\": " + meetingRequest.isScheduled() + "\"}\n");
 			} catch (SQLException e) {
 				errorOut.println("Error fetching name from ID");
 				response.sendError(500, "Error fetching name from ID");
@@ -176,23 +185,7 @@ public class FriendRequestServlet extends HttpServlet {
 			response.sendError(500, "Statement creation failed");
 			return;
 		}
-		int me = -1;
-		try {
-			Integer.parseInt(request.getParameter("me"));
-		} catch (NumberFormatException e) {
-			errorOut.println("Invalid user ID (me)");
-			response.sendError(412, "Invalid user ID (me)");
-			return;
-		}
-		String otherName = request.getParameter("other");
-		int other = -1;
-		try {
-			other = SQLHelpers.getUserIDFromName(otherName);
-		} catch (SQLException e) {
-			errorOut.println("Something went wrong while querying username");
-			response.sendError(412, "Something went wrong while querying username");
-			return;
-		} 
+		 
 		
 		boolean makeRequest = request.getParameter("type").equals("request");
 		if (!makeRequest && !request.getParameter("type").equals("approval")) {
@@ -201,6 +194,23 @@ public class FriendRequestServlet extends HttpServlet {
 			return;
 		}
 		if (makeRequest) {
+			int me = -1;
+			try {
+				Integer.parseInt(request.getParameter("me"));
+			} catch (NumberFormatException e) {
+				errorOut.println("Invalid user ID (me)");
+				response.sendError(412, "Invalid user ID (me)");
+				return;
+			}
+			String otherName = request.getParameter("other");
+			int other = -1;
+			try {
+				other = SQLHelpers.getUserIDFromName(otherName);
+			} catch (SQLException e) {
+				errorOut.println("Something went wrong while querying username");
+				response.sendError(412, "Something went wrong while querying username");
+				return;
+			}
 			String validateNotFriendsAlreadyQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
 			boolean alreadyFriends = true;
 			try {
@@ -210,30 +220,32 @@ public class FriendRequestServlet extends HttpServlet {
 				response.sendError(500, "Request validation failed");
 				return;
 			}
-			if (alreadyFriends) {
-				errorOut.println("Already friends");
-				response.sendError(412, "Already friends");
+			if (!alreadyFriends) {
+				errorOut.println("Not friends");
+				response.sendError(412, "Not friends");
 				return;
 			}
-			boolean alreadyRequested = true;
-			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			int duration = -1;
 			try {
-				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
-			} catch (SQLException e) {
-				errorOut.println("Request validation failed");
-				response.sendError(500, "Request validation failed");
-				return;
-			}
-			if (alreadyRequested) {
-				errorOut.println("Already requested");
-				response.sendError(412, "Already requested");
+				duration = Integer.parseInt(request.getParameter("duration"));
+			} catch (NumberFormatException e) {
+				errorOut.println("Invalid duration");
+				response.sendError(412, "Invalid duration");
 				return;
 			}
 			/* Set up of current date formatting, etc. */
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date currentDateTime = new Date (System.currentTimeMillis());
-			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
-			String insertionQuery = "INSERT INTO 'friend_requests' ('initiator_id','target_id','request_time') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			String expiryDateString = request.getParameter("expiry");
+			Date expiryDateTime = null;
+			try {
+				expiryDateTime = mySQLFormatDateTime.parse(expiryDateString);
+			} catch (ParseException e1) {
+				errorOut.println("Invalid date parameter");
+				response.sendError(412,"Invalid date parameter");
+				return;
+			}
+			String mySQLFormatedExpiryTime = mySQLFormatDateTime.format(expiryDateTime);
+			String insertionQuery = "INSERT INTO 'meeting_requests' ('propositioner','approver','duration','expiry','approved','scheduled') VALUES ('" + me + "," + other + "," + duration + "," + mySQLFormatedExpiryTime + ",0,0)";
 			try {
 				statement.execute(insertionQuery);
 			} catch (SQLException e) {
@@ -241,23 +253,17 @@ public class FriendRequestServlet extends HttpServlet {
 				response.sendError(500, "Insertion failed");
 				return;
 			}
-			response.setStatus(204); //Friend request sent
+			response.setStatus(204); //Meeting request sent
 		} else {
-			String validateNotFriendsQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
-			boolean alreadyFriends = true;
+			int id = -1;
 			try {
-				alreadyFriends = statement.executeQuery(validateNotFriendsQuery).first();
-			} catch (SQLException e) {
-				errorOut.println("Request validation failed");
-				response.sendError(500, "Request validation failed");
+				id = Integer.parseInt(request.getParameter("id"));
+			} catch (NumberFormatException e) {
+				errorOut.println("Bad ID");
+				response.sendError(412, "Bad ID");
 				return;
 			}
-			if (alreadyFriends) {
-				errorOut.println("Already friends");
-				response.sendError(412, "Already friends");
-				return;
-			}
-			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			String requestedValidationQuery = "SELECT * FROM 'meeting_requests' WHERE 'id'= " + id;
 			boolean alreadyRequested = true;
 			try {
 				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
@@ -271,41 +277,64 @@ public class FriendRequestServlet extends HttpServlet {
 				response.sendError(412, "Request does not exist");
 				return;
 			}
-			/* Set up of current date formatting, etc. */
-			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date currentDateTime = new Date (System.currentTimeMillis());
-			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
-			String insertionQuery = "INSERT INTO 'friendships' ('friend1','friend2','friendship_start') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			String updateQuery = "UPDATE 'meeting_requests' SET 'approved'=1 WHERE 'id'= " + id;
 			try {
-				statement.execute(insertionQuery);
+				statement.execute(updateQuery);
 			} catch (SQLException e) {
-				errorOut.println("Insertion failed");
-				response.sendError(500, "Insertion failed");
+				errorOut.println("Update failed");
+				response.sendError(500, "Update failed");
 				return;
 			}
-			response.setStatus(204); //Friend request approved
+			response.setStatus(204); //Meeting request approved
+		}
+	}
+
+	public class MeetingRequest {
+		private int id;
+		private int propositioner;
+		private int approver;
+		private int duration;
+		private boolean approved;
+		private boolean scheduled;
+		private Date expiryDate;
+		public MeetingRequest(int id, int propositioner, int approver, int duration, Date expiryDate, boolean approved, boolean scheduled) {
+			this.id = id;
+			this.propositioner = propositioner;
+			this.approver = approver;
+			this.expiryDate = expiryDate;
+			this.approved = approved;
+			this.scheduled = scheduled;
+		}
+		public String getID() {
+			return Integer.toString(id);
+		}
+		public String getPropositionerName() throws SQLException {
+			return SQLHelpers.getUserFromUserID(propositioner);
+		}
+		public String getApproverName() throws SQLException {
+			return SQLHelpers.getUserFromUserID(approver);
+		}
+		public String getExpiryDateString() {
+			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			return mySQLFormatDateTime.format(expiryDate);
+		}
+		public String isApproved() {
+			if (approved) {
+				return "true";
+			} else {
+				return "false";
+			}
+		}
+		public String isScheduled() {
+			if (scheduled) {
+				return "true";
+			} else {
+				return "false";
+			}
+		}
+		public String getDuration() {
+			return Integer.toString(duration);
 		}
 		
-	}
-	private class FriendRequest {
-		private int initiator;
-		private int target;
-		private Date requestDate;
-		public FriendRequest(int initiator, int target, Date requestDate) {
-			this.initiator = initiator;
-			this.target = target;
-			this.requestDate = requestDate;
-		}
-		public String getTargetName() throws SQLException {
-			return SQLHelpers.getUserFromUserID(target);
-		}
-		public String getInitiatorName() throws SQLException {
-			return SQLHelpers.getUserFromUserID(initiator);
-		}
-		public String getRequestDateString() {
-			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			return mySQLFormatDateTime.format(requestDate);
-		}
-			
 	}
 }

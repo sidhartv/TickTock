@@ -64,3 +64,38 @@ Getting a list of friends:
 		-204 = all good. Servlet returns nothing when person has no friends :'(
 		-412 = malformed parameters. User does not exist in DB.
 		-500 = severe server side error 
+		
+Seeing your meeting requests:
+	-Send a GET request to the MeetingRequestServlet (/meeting_request) to see all of your meeting requests
+	-Works more of less the same way as friend requests
+	-MUST INCLUDE PARAMETER:
+		-id - your user ID
+		-party - equal to "propositioner" for when you want to see proposed meetings or "approver" when you want to see meetings proposed to you
+	Response types: 
+		-200 = all good. Servlet returns JSON array containing objects of meeting request ids, propositioner name, approver name, duration, expiry date, approved, scheduled
+		-204 = all good. Servlet returns nothing when no meeting requests exist
+		-412 = malformed parameters. Either id is invalid or party does not equal propositioner or approver
+		-500 = internal server error
+
+Creating a meeting request
+	-Send a POST request to MeetingRequestServlet (/meeting_request) with parameter type = request
+	-MUST INCLUDE PARAMETERS:
+		-me - your own user id
+		-other - other person's username
+		-duration - duration of the meeting (minutes)
+		-expiry - expiry date/time of the meeting request
+		-type - must equal "request" for this action
+	Response types: 
+		-204 = all good. Servlet returns nothing when meeting request successfully created
+		-412 = malformed paramaters. Either one of the user ids is invalid (or could not be found), type is neither approval nor request, the duration is invalid, the expiry could not be resolved to a date, or the request was sent to someone who is not a friend
+		-500 = bad
+		
+Approving meeting request
+	-Send a POST request to the MeetingRequestServlet with parameter type = "approval"
+	-MUST INCLUDE PARAMETERS:
+		-id - id of the meeting to approve
+		-type - must be "approval" for this action to occur
+	Response types:
+		-204 = all good. Servlet returns nothing when meeting request successfully created
+		-412 = malformed parameters. Either the id does not exist in the DB, or the type is neither approval nor request
+		-500 = ugh not again	 
