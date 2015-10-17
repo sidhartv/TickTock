@@ -143,3 +143,5 @@ Get all user's with a given state at a given time
 		-204 = all good, no users with this state at this time
 		-412 = username was probably bad or time was invalid, state was out of bounds, or time was bad
 		-500 = we forgot his drink
+		
+Suggested meetings -- I'm not going to guarantee anything right now. Let's not use this until we get everything else working.
