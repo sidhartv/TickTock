@@ -54,3 +54,13 @@ Approving friend requests:
 	-204 = all good. Servlet returns nothing when approval is successful
 	-412 = malformed parameters. Either you and the other person are already friends, a friend request does not exist, a/the user(s) cannot be found, or type is invalid
 	-500 = server side error	
+	
+Getting a list of friends:
+	-Send a GET request to the FriendList servlet (mapped to /friend_list)
+	-MUST INCLUDE PARAMETER:
+		-user - username of the person whose friend list we wish to acquire
+	Response types:
+		-200 = all good. Servlet returns a JSON array containing a list of usernames
+		-204 = all good. Servlet returns nothing when person has no friends :'(
+		-412 = malformed parameters. User does not exist in DB.
+		-500 = severe server side error 
