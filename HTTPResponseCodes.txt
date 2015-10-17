@@ -51,9 +51,9 @@ Approving friend requests:
 		-other - the other person's user name
 		-type - set equal to "approval" for this action
 	Response types:
-	-204 = all good. Servlet returns nothing when approval is successful
-	-412 = malformed parameters. Either you and the other person are already friends, a friend request does not exist, a/the user(s) cannot be found, or type is invalid
-	-500 = server side error	
+		-204 = all good. Servlet returns nothing when approval is successful
+		-412 = malformed parameters. Either you and the other person are already friends, a friend request does not exist, a/the user(s) cannot be found, or type is invalid
+		-500 = server side error	
 	
 Getting a list of friends:
 	-Send a GET request to the FriendList servlet (mapped to /friend_list)
@@ -75,7 +75,7 @@ Seeing your meeting requests:
 		-200 = all good. Servlet returns JSON array containing objects of meeting request ids, propositioner name, approver name, duration, expiry date, approved, scheduled
 		-204 = all good. Servlet returns nothing when no meeting requests exist
 		-412 = malformed parameters. Either id is invalid or party does not equal propositioner or approver
-		-500 = internal server error
+		-500 = Houston, we have a problem.
 
 Creating a meeting request
 	-Send a POST request to MeetingRequestServlet (/meeting_request) with parameter type = request
@@ -88,7 +88,7 @@ Creating a meeting request
 	Response types: 
 		-204 = all good. Servlet returns nothing when meeting request successfully created
 		-412 = malformed paramaters. Either one of the user ids is invalid (or could not be found), type is neither approval nor request, the duration is invalid, the expiry could not be resolved to a date, or the request was sent to someone who is not a friend
-		-500 = bad
+		-500 = uhhh...Houston?
 		
 Approving meeting request
 	-Send a POST request to the MeetingRequestServlet with parameter type = "approval"
@@ -98,4 +98,23 @@ Approving meeting request
 	Response types:
 		-204 = all good. Servlet returns nothing when meeting request successfully created
 		-412 = malformed parameters. Either the id does not exist in the DB, or the type is neither approval nor request
-		-500 = ugh not again	 
+		-500 = Hello? Anyone there?
+
+Get all users
+	-Send a GET request to the GetAllUsersServlet, mapped to /get_all_users
+	-No parameters required
+	Response types:
+		-200 = all good, will return TEXT (not json). Each username is on a new line
+		-500 = As alone as when Squidward broke the time machine.
+	
+Get your scheduled events:
+	-Send a GET request to ScheduledEventServlet (/scheduled_event)
+	-MUST INCLUDE PARAMETERS:
+		-user - username of the person whose events you want to see
+	Response types:
+		-200 = all good, will return JSON object of array of events, each one consisting of user_id, description, startTime, and endTime
+		-204 = all good, no events means Servlet won't return anything
+		-412 = malformed input, something wrong with the username (either doesn't exist, or something messed up)
+		-500 = Just looking for a rock so that we can deliver this pizza
+		
+		
