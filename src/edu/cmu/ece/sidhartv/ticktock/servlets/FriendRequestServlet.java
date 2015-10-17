@@ -150,6 +150,141 @@ public class FriendRequestServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		Connection connection = null;
+		PrintStream errorOut = System.err;
+		try {
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+			} catch (ClassNotFoundException e) {
+				errorOut.println("Error: driver cannot be found");
+				response.sendError(500, "Error: driver cannot be found\n");
+				return;
+			}
+			connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/TickTock", "root", "");
+		} catch (SQLException e) {
+			String errorMsg = "Failed to connect to MySQL database: \n\t"
+					+ e.getMessage();
+			errorOut.println(errorMsg);
+			response.sendError(500, errorMsg);
+			return;
+		}
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			errorOut.println("Statement creation failed");
+			response.sendError(500, "Statement creation failed");
+			return;
+		}
+		int me = -1;
+		try {
+			Integer.parseInt(request.getParameter("me"));
+		} catch (NumberFormatException e) {
+			errorOut.println("Invalid user ID (me)");
+			response.sendError(412, "Invalid user ID (me)");
+			return;
+		}
+		String otherName = request.getParameter("other");
+		int other;
+		try {
+			other = SQLHelpers.getUserIDFromName(otherName);
+		} catch (SQLException e) {
+			errorOut.println("Something went wrong while querying username");
+			response.sendError(412, "Something went wrong while querying username");
+			return;
+		} 
+		
+		boolean makeRequest = request.getParameter("type").equals("request");
+		if (!makeRequest && !request.getParameter("type").equals("approval")) {
+			errorOut.println("Invalid type parameter");
+			response.sendError(412,"Invalid type parameter");
+			return;
+		}
+		if (makeRequest) {
+			String validateNotFriendsAlreadyQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
+			boolean alreadyFriends = true;
+			try {
+				alreadyFriends = statement.executeQuery(validateNotFriendsAlreadyQuery).first();
+			} catch (SQLException e) {
+				errorOut.println("Request validation failed");
+				response.sendError(500, "Request validation failed");
+				return;
+			}
+			if (alreadyFriends) {
+				errorOut.println("Already friends");
+				response.sendError(412, "Already friends");
+				return;
+			}
+			boolean alreadyRequested = true;
+			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			try {
+				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
+			} catch (SQLException e) {
+				errorOut.println("Request validation failed");
+				response.sendError(500, "Request validation failed");
+				return;
+			}
+			if (alreadyRequested) {
+				errorOut.println("Already requested");
+				response.sendError(412, "Already requested");
+				return;
+			}
+			/* Set up of current date formatting, etc. */
+			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			Date currentDateTime = new Date (System.currentTimeMillis());
+			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
+			String insertionQuery = "INSERT INTO 'friend_requests' ('initiator_id','target_id','request_time') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			try {
+				statement.execute(insertionQuery);
+			} catch (SQLException e) {
+				errorOut.println("Insertion failed");
+				response.sendError(500, "Insertion failed");
+				return;
+			}
+			response.setStatus(204); //Friend request sent
+		} else {
+			String validateNotFriendsQuery = "SELECT * FROM 'friendships' WHERE ('friend1'= " + me + "AND 'friend2'= " + other + ") OR ('friend1'= " + other + " AND 'friend2'= " + me + ")";
+			boolean alreadyFriends = true;
+			try {
+				alreadyFriends = statement.executeQuery(validateNotFriendsQuery).first();
+			} catch (SQLException e) {
+				errorOut.println("Request validation failed");
+				response.sendError(500, "Request validation failed");
+				return;
+			}
+			if (alreadyFriends) {
+				errorOut.println("Already friends");
+				response.sendError(412, "Already friends");
+				return;
+			}
+			String requestedValidationQuery = "SELECT * FROM 'friend_requests' WHERE ('initiator_id'= " + me + "AND 'target_id'= " + other + ") OR ('target_id'= " + other + " AND 'initiator_id'= " + me + ")";
+			boolean alreadyRequested = true;
+			try {
+				alreadyRequested = statement.executeQuery(requestedValidationQuery).first();
+			} catch (SQLException e) {
+				errorOut.println("Request validation failed");
+				response.sendError(500, "Request validation failed");
+				return;
+			}
+			if (!alreadyRequested) {
+				errorOut.println("Request does not exist");
+				response.sendError(412, "Request does not exist");
+				return;
+			}
+			/* Set up of current date formatting, etc. */
+			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			Date currentDateTime = new Date (System.currentTimeMillis());
+			String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
+			String insertionQuery = "INSERT INTO 'friendships' ('friend1','friend2','friendship_start') VALUES ('" + me + "," + other + "," + mySQLFormatedCurrentTime + ")";
+			try {
+				statement.execute(insertionQuery);
+			} catch (SQLException e) {
+				errorOut.println("Insertion failed");
+				response.sendError(500, "Insertion failed");
+				return;
+			}
+			response.setStatus(204); //Friend request approved
+		}
 		
 	}
 	private class FriendRequest {
@@ -160,18 +295,6 @@ public class FriendRequestServlet extends HttpServlet {
 			this.initiator = initiator;
 			this.target = target;
 			this.requestDate = requestDate;
-		}
-		public int getInitiator() {
-			return initiator;
-		}
-		public void setInitiator(int initiator) {
-			this.initiator = initiator;
-		}
-		public int getTarget() {
-			return target;
-		}
-		public void setTarget(int target) {
-			this.target = target;
 		}
 		public String getTargetName() throws SQLException {
 			return SQLHelpers.getUserFromUserID(target);

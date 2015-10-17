@@ -84,12 +84,13 @@ public class StatusServlet extends HttpServlet {
 			requestedUserId = SQLHelpers.getUserIDFromName(usernameRequested);
 		} catch (SQLException e) {
 			errorOut.println("Something went wrong while querying username");
-			response.sendError(500, "Something went wrong while querying username");
+			response.sendError(412, "Something went wrong while querying username");
 			return;
 		}
 		if (requestedUserId < 0) {
 			errorOut.println("Invalid userID");
 			response.sendError(412, "Invalid username");
+			return;
 		}
 		
 		String dateTimeRequested = (request.getParameter("time"));
