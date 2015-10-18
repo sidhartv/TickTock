@@ -8,6 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class SQLHelpers {
+	public static String translateParameter(String s) {
+		return s.replace("%20", " ");
+	}
 	public static String getUserFromUserID(int id) throws SQLException {
 		Connection connection = null;
 		PrintStream errorOut = System.err;

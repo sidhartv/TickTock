@@ -34,6 +34,7 @@ public class FriendListServlet extends HttpServlet {
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
+ 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		Connection connection = null;
 		PrintWriter responseOut = response.getWriter();
@@ -62,7 +63,7 @@ public class FriendListServlet extends HttpServlet {
 			response.sendError(500, "Statement creation failed");
 			return;
 		}
-		String username = request.getParameter("user");
+		String username = SQLHelpers.translateParameter(request.getParameter("user"));
 		int thisID = -1;
 		try {
 			thisID = SQLHelpers.getUserIDFromName(username);

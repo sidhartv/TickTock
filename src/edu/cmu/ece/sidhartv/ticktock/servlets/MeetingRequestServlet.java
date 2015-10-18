@@ -69,14 +69,14 @@ public class MeetingRequestServlet extends HttpServlet {
 		}
 		int myID = -1;
 		try {
-			myID = Integer.parseInt(request.getParameter("id"));
+			myID = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("id")));
 		} catch (NumberFormatException e) {
 			errorOut.println("Invalid id number given");
 			response.sendError(412, "Invalid id number given");
 			return;
 		}
-		boolean isPropositioner = request.getParameter("party").equals("propositioner");
-		if (!isPropositioner && !request.getParameter("party").equals("approver")) {
+		boolean isPropositioner = SQLHelpers.translateParameter(request.getParameter("party")).equals("propositioner");
+		if (!isPropositioner && !SQLHelpers.translateParameter(request.getParameter("party")).equals("approver")) {
 			errorOut.println("Invalid party!");
 			response.sendError(412,"Invalid party!");
 			return;
@@ -184,8 +184,8 @@ public class MeetingRequestServlet extends HttpServlet {
 		}
 		 
 		
-		boolean makeRequest = request.getParameter("type").equals("request");
-		if (!makeRequest && !request.getParameter("type").equals("approval")) {
+		boolean makeRequest = SQLHelpers.translateParameter(request.getParameter("type")).equals("request");
+		if (!makeRequest && !SQLHelpers.translateParameter(request.getParameter("type")).equals("approval")) {
 			errorOut.println("Invalid type parameter");
 			response.sendError(412,"Invalid type parameter");
 			return;
@@ -193,13 +193,13 @@ public class MeetingRequestServlet extends HttpServlet {
 		if (makeRequest) {
 			int me = -1;
 			try {
-				Integer.parseInt(request.getParameter("me"));
+				Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("me")));
 			} catch (NumberFormatException e) {
 				errorOut.println("Invalid user ID (me)");
 				response.sendError(412, "Invalid user ID (me)");
 				return;
 			}
-			String otherName = request.getParameter("other");
+			String otherName = SQLHelpers.translateParameter(request.getParameter("other"));
 			int other = -1;
 			try {
 				other = SQLHelpers.getUserIDFromName(otherName);
@@ -224,7 +224,7 @@ public class MeetingRequestServlet extends HttpServlet {
 			}
 			int duration = -1;
 			try {
-				duration = Integer.parseInt(request.getParameter("duration"));
+				duration = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("duration")));
 			} catch (NumberFormatException e) {
 				errorOut.println("Invalid duration");
 				response.sendError(412, "Invalid duration");
@@ -232,7 +232,7 @@ public class MeetingRequestServlet extends HttpServlet {
 			}
 			/* Set up of current date formatting, etc. */
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			String expiryDateString = request.getParameter("expiry");
+			String expiryDateString = SQLHelpers.translateParameter(request.getParameter("expiry"));
 			Date expiryDateTime = null;
 			try {
 				expiryDateTime = mySQLFormatDateTime.parse(expiryDateString);
@@ -254,7 +254,7 @@ public class MeetingRequestServlet extends HttpServlet {
 		} else {
 			int id = -1;
 			try {
-				id = Integer.parseInt(request.getParameter("id"));
+				id = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("id")));
 			} catch (NumberFormatException e) {
 				errorOut.println("Bad ID");
 				response.sendError(412, "Bad ID");

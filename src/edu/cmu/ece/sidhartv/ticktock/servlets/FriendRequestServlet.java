@@ -67,14 +67,14 @@ public class FriendRequestServlet extends HttpServlet {
 		}
 		int myID = -1;
 		try {
-			myID = Integer.parseInt(request.getParameter("id"));
+			myID = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("id")));
 		} catch (NumberFormatException e) {
 			errorOut.println("Invalid id number given");
 			response.sendError(412, "Invalid id number given");
 			return;
 		}
-		boolean isInitiator = request.getParameter("party").equals("initiator");
-		if (!isInitiator && !request.getParameter("party").equals("target")) {
+		boolean isInitiator = SQLHelpers.translateParameter(request.getParameter("party")).equals("initiator");
+		if (!isInitiator && !SQLHelpers.translateParameter(request.getParameter("party")).equals("target")) {
 			errorOut.println("Invalid party!");
 			response.sendError(412,"Invalid party!");
 			return;
@@ -178,13 +178,13 @@ public class FriendRequestServlet extends HttpServlet {
 		}
 		int me = -1;
 		try {
-			Integer.parseInt(request.getParameter("me"));
+			Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("me")));
 		} catch (NumberFormatException e) {
 			errorOut.println("Invalid user ID (me)");
 			response.sendError(412, "Invalid user ID (me)");
 			return;
 		}
-		String otherName = request.getParameter("other");
+		String otherName = SQLHelpers.translateParameter(request.getParameter("other"));
 		int other = -1;
 		try {
 			other = SQLHelpers.getUserIDFromName(otherName);
@@ -194,8 +194,8 @@ public class FriendRequestServlet extends HttpServlet {
 			return;
 		} 
 		
-		boolean makeRequest = request.getParameter("type").equals("request");
-		if (!makeRequest && !request.getParameter("type").equals("approval")) {
+		boolean makeRequest = SQLHelpers.translateParameter(request.getParameter("type")).equals("request");
+		if (!makeRequest && !SQLHelpers.translateParameter(request.getParameter("type")).equals("approval")) {
 			errorOut.println("Invalid type parameter");
 			response.sendError(412,"Invalid type parameter");
 			return;

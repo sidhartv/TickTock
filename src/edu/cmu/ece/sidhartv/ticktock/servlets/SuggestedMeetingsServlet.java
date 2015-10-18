@@ -73,7 +73,7 @@ public class SuggestedMeetingsServlet extends HttpServlet {
 		
 		int me = -1;
 		try {
-			me = Integer.parseInt(request.getParameter("ownID"));
+			me = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("ownID")));
 		} catch (NumberFormatException e) {
 			errorOut.println("Bad own ID");
 			response.sendError(412, "Bad own ID");

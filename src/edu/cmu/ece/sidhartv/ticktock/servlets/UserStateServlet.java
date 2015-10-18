@@ -65,16 +65,16 @@ public class UserStateServlet extends HttpServlet {
 			response.sendError(500, "Statement creation failed");
 			return;
 		}
-		boolean userAllStates = request.getParameter("type").equals("user_all_states");
-		boolean userStateAtTime = request.getParameter("type").equals("user_state_at_time");
-		boolean usersWithStateAtTime = request.getParameter("type").equals("users_with_state_at_time");
+		boolean userAllStates = SQLHelpers.translateParameter(request.getParameter("type")).equals("user_all_states");
+		boolean userStateAtTime = SQLHelpers.translateParameter(request.getParameter("type")).equals("user_state_at_time");
+		boolean usersWithStateAtTime = SQLHelpers.translateParameter(request.getParameter("type")).equals("users_with_state_at_time");
 		if (!(userAllStates || userStateAtTime || usersWithStateAtTime)) {
 			errorOut.println("Invalid type parameter");
 			response.sendError(412, "Invalid type parameter");
 			return;
 		}
 		if (userAllStates) {
-			String username = request.getParameter("user");
+			String username = SQLHelpers.translateParameter(request.getParameter("user"));
 			int user_id;
 			try {
 				user_id = SQLHelpers.getUserIDFromName(username);
@@ -178,7 +178,7 @@ public class UserStateServlet extends HttpServlet {
 			responseOut.append(JSON);
 			response.setStatus(200); //AYYYYY 
 		} else if (userStateAtTime) {
-			String username = request.getParameter("user");
+			String username = SQLHelpers.translateParameter(request.getParameter("user"));
 			int user_id;
 			try {
 				user_id = SQLHelpers.getUserIDFromName(username);
@@ -193,7 +193,7 @@ public class UserStateServlet extends HttpServlet {
 				return;
 			}
 
-			String timeRequested = request.getParameter("time");
+			String timeRequested = SQLHelpers.translateParameter(request.getParameter("time"));
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			Date timeRequestedDate = null;
 			try {
@@ -230,7 +230,7 @@ public class UserStateServlet extends HttpServlet {
 		} else {
 			int stateRequested = -1;
 			try {
-				stateRequested = Integer.parseInt(request.getParameter("state")); 
+				stateRequested = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("state"))); 
 			} catch (NumberFormatException e) {
 				//TODO auto-gen
 				e.printStackTrace();
@@ -241,7 +241,7 @@ public class UserStateServlet extends HttpServlet {
 			}
 
 
-			String timeRequested = request.getParameter("time");
+			String timeRequested = SQLHelpers.translateParameter(request.getParameter("time"));
 			SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			Date timeRequestedDate = null;
 			try {
@@ -331,7 +331,7 @@ public class UserStateServlet extends HttpServlet {
 		}
 		int user_id = -1;
 		try {
-			user_id = Integer.parseInt(request.getParameter("userID"));
+			user_id = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("userID")));
 		} catch (NumberFormatException e) {
 			errorOut.println("Invalid user ID");
 			response.sendError(412, "Invalid userID");
@@ -339,7 +339,7 @@ public class UserStateServlet extends HttpServlet {
 		}
 		int state = -1;
 		try {
-			state = Integer.parseInt(request.getParameter("state"));
+			state = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("state")));
 		} catch (NumberFormatException e) {
 			errorOut.println("State is not valid");
 			response.sendError(412,"State is not valid");
@@ -350,8 +350,8 @@ public class UserStateServlet extends HttpServlet {
 			response.sendError(412,"State is not valid");
 			return;
 		}
-		String startDate = request.getParameter("start");
-		String endDate = request.getParameter("end");
+		String startDate = SQLHelpers.translateParameter(request.getParameter("start"));
+		String endDate = SQLHelpers.translateParameter(request.getParameter("end"));
 
 		SimpleDateFormat mySQLFormatDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date startDateTime;

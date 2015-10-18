@@ -69,7 +69,7 @@ public class StatusServlet extends HttpServlet {
 		}
 		
 		
-		String usernameRequested = (request.getParameter("user"));
+		String usernameRequested = (SQLHelpers.translateParameter(request.getParameter("user")));
 		try {
 			usernameRequested.length();
 		} catch (NullPointerException e) {
@@ -93,7 +93,7 @@ public class StatusServlet extends HttpServlet {
 			return;
 		}
 		
-		String dateTimeRequested = (request.getParameter("time"));
+		String dateTimeRequested = (SQLHelpers.translateParameter(request.getParameter("time")));
 		try {
 			dateTimeRequested.length();
 		} catch (NullPointerException e) {
@@ -195,12 +195,12 @@ public class StatusServlet extends HttpServlet {
 		
 		
 		
-		String status = request.getParameter("status");
+		String status = SQLHelpers.translateParameter(request.getParameter("status"));
 		
 		/* Parse and validate the userID out of the parameters */
 		int userID = -1;
 		try {
-			userID = Integer.parseInt(request.getParameter("uid"));
+			userID = Integer.parseInt(SQLHelpers.translateParameter(request.getParameter("uid")));
 		} catch (NumberFormatException e) {
 			errorOut.println("User ID must be an integer");
 			response.sendError(412, "User ID must be an integer");
@@ -227,7 +227,7 @@ public class StatusServlet extends HttpServlet {
 		Date currentDateTime = new Date (System.currentTimeMillis());
 		String mySQLFormatedCurrentTime = mySQLFormatDateTime.format(currentDateTime);
 
-		String expiry = request.getParameter("expiry");
+		String expiry = SQLHelpers.translateParameter(request.getParameter("expiry"));
 		
 		/* Update old statuses to be expired */
 		String updateExpiryQuery = "UPDATE statuses SET expiry= '" + mySQLFormatedCurrentTime + "' WHERE userID= '" + Integer.toString(userID) + "' AND expiry > '" + mySQLFormatedCurrentTime +"'"; 
